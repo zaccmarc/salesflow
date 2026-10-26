@@ -52,6 +52,8 @@ def main():
 
 Cálculo da **receita por categoria e por marca** a partir de eventos de e-commerce, em três versões: baseline sequencial, paralela (threads vs. processos) e distribuída (coordenador + workers HTTP com tolerância a falha). Projeto da disciplina *Fundamentos da Programação Paralela e Distribuída*.
 
+Apresentação do projeto: [`docs/SalesFlow.pptx`](docs/SalesFlow.pptx).
+
 ## 1. Dados
 
 - Origem desta execução: {origem}.
