@@ -1,0 +1,1 @@
+{"executor": "thread", "workers": 2, "block_size_mb": 64.0, "blocos": 9, "tempo_s": 9.119670333999977, "correto": true}

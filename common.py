@@ -101,3 +101,9 @@ def process_block(path, start, end):
         for row in csv.reader(lines()):
             process_row(row, agg)
     return agg
+
+
+def load_baseline(path):
+    import json
+    with open(path) as f:
+        return json.load(f)
