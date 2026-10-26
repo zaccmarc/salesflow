@@ -18,7 +18,8 @@ class DistributedError(RuntimeError):
 
 
 class Coordinator:
-    def __init__(self, urls, timeout=None, max_attempts=None, backoff=None, health_interval=0.5, stall_timeout=10.0):
+    def __init__(self, urls, timeout=None, max_attempts=None, backoff=None, health_interval=0.5, stall_timeout=10.0, on_event=None):
+        self.on_event = on_event  # callback(evento, **dados) opcional, usado pela demo visual
         self.stall_timeout = stall_timeout
         self.urls = list(urls)
         self.timeout = timeout if timeout is not None else config.REQUEST_TIMEOUT
@@ -26,6 +27,10 @@ class Coordinator:
         self.backoff = backoff if backoff is not None else config.BACKOFF_BASE
         self.health_interval = health_interval
         self.reassignments = 0
+
+    def _emit(self, event, **data):
+        if self.on_event:
+            self.on_event(event, **data)
 
     @staticmethod
     def store(results, body):
@@ -63,6 +68,7 @@ class Coordinator:
                         bid, s, e = q.get(timeout=0.1)
                     except queue.Empty:
                         continue
+                    self._emit("dispatch", block=bid, worker=url)
                     try:
                         r = client.post(url + "/process", json={"block_id": bid, "start": s, "end": e},
                                         timeout=self.timeout)
@@ -70,6 +76,8 @@ class Coordinator:
                         body = r.json()
                         with lock:
                             first = self.store(results, body)
+                        self._emit("done", block=bid, worker=url)
+                        with lock:
                             if first:
                                 pending["n"] -= 1
                                 if pending["n"] == 0:
@@ -83,15 +91,19 @@ class Coordinator:
                                 continue
                             self.reassignments += 1
                             n = attempts[bid]
+                        self._emit("retry", block=bid, worker=url, attempt=n)
                         time.sleep(self.backoff * n)  # espera crescente
                         q.put((bid, s, e))
                         # worker suspeito: só volta a pegar blocos quando /health responder
                         with lock:
                             suspect.add(url)
+                        self._emit("suspect", worker=url)
                         while not done.is_set() and not healthy(client, url):
                             time.sleep(self.health_interval)
                         with lock:
                             suspect.discard(url)
+                        if not done.is_set():
+                            self._emit("recovered", worker=url)
 
         threads = [threading.Thread(target=worker_loop, args=(u,), daemon=True) for u in self.urls]
         for t in threads:

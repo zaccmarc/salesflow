@@ -24,7 +24,13 @@ def health():
 @app.post("/process")
 def process(b: Block):
     path = os.environ.get("DATA_PATH", "data/sample.csv")
-    time.sleep(float(os.environ.get("DELAY_MS", 0)) / 1000)  # atraso artificial para testes de falha
+    delay = float(os.environ.get("DELAY_MS", 0)) / 1000  # atraso artificial (testes de falha e demo)
+    if os.environ.get("DELAY_MODE") == "cpu":  # ocupa a CPU, como o trabalho real
+        end = time.thread_time() + delay
+        while time.thread_time() < end:
+            pass
+    else:
+        time.sleep(delay)
     return {"block_id": b.block_id, "agregado": process_block(path, b.start, b.end)}
 
 

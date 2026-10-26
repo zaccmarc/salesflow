@@ -66,6 +66,14 @@ python benchmark.py && python scripts/generate_report.py
 
 Parâmetros (`config.py`, ajustáveis por variável de ambiente ou CLI): `MAX_ROWS` (5.000.000), `BLOCK_SIZE_MB` (64), `REPEATS` (3), `REQUEST_TIMEOUT` (30 s), `MAX_ATTEMPTS` (3, espera crescente).
 
+### Demo visual (localhost)
+
+```bash
+python demo.py            # abre http://127.0.0.1:5000 (use --rows N para mudar o tamanho da base da demo)
+```
+
+Roda o pipeline real (`process_block`, `Coordinator`, workers HTTP) sobre uma base sintética pequena e mostra, ao vivo, os blocos mudando de estado, os workers, o registro de eventos e a conferência com o baseline. Dá para escolher o modo (sequencial, threads, processos, distribuído), o número de workers e de blocos, **derrubar um worker** durante a execução e comparar as execuções numa tabela. Cada bloco recebe uma carga artificial de CPU para dar tempo de ver o fluxo, então os tempos da demo **não** substituem os do benchmark.
+
 ## 4. Resultados
 
 Baseline sequencial: **5.28 s** (mediana de 3 execuções). Speedup = tempo do baseline / tempo da configuração. Foram executadas 51 rodadas válidas; todas conferidas contra o baseline (`correto = sim` em todas as linhas de `resultados/tempos.csv`).
