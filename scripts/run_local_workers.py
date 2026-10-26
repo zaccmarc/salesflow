@@ -1,6 +1,7 @@
 """Sobe N workers como processos locais (portas 8001..). Fallback sem Docker."""
 import argparse
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -10,12 +11,21 @@ import httpx
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def start_workers(n, data_path, base_port=8001):
-    """Devolve (lista de Popen, lista de URLs) quando todos respondem a /health."""
-    env = dict(os.environ, DATA_PATH=os.path.abspath(data_path))
+def _free_port():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def start_workers(n, data_path, base_port=None, extra_env=None):
+    """Devolve (lista de Popen, lista de URLs) quando todos respondem a /health.
+
+    base_port=None escolhe portas livres (usado nos testes); o CLI usa 8001...
+    """
+    env = dict(os.environ, DATA_PATH=os.path.abspath(data_path), **(extra_env or {}))
     procs, urls = [], []
     for i in range(n):
-        port = base_port + i
+        port = _free_port() if base_port is None else base_port + i
         env_i = dict(env, PORT=str(port))
         procs.append(subprocess.Popen([sys.executable, "worker.py"], cwd=ROOT, env=env_i,
                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
@@ -51,7 +61,7 @@ if __name__ == "__main__":
     ap.add_argument("-n", type=int, default=3)
     ap.add_argument("--data", default="data/sample.csv")
     a = ap.parse_args()
-    procs, urls = start_workers(a.n, a.data)
+    procs, urls = start_workers(a.n, a.data, base_port=8001)
     print("workers:", ",".join(urls), flush=True)
     try:
         while True:

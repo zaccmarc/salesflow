@@ -27,6 +27,13 @@ class Coordinator:
         self.health_interval = health_interval
         self.reassignments = 0
 
+    @staticmethod
+    def store(results, body):
+        """Guarda o resultado por block_id (sobrescreve, nunca soma). True se era o primeiro."""
+        first = body["block_id"] not in results
+        results[body["block_id"]] = body["agregado"]
+        return first
+
     def run(self, path, block_size):
         blocks = split_blocks(path, block_size)
         q = queue.Queue()
@@ -62,8 +69,7 @@ class Coordinator:
                         r.raise_for_status()
                         body = r.json()
                         with lock:
-                            first = body["block_id"] not in results
-                            results[body["block_id"]] = body["agregado"]  # sobrescreve, nunca soma
+                            first = self.store(results, body)
                             if first:
                                 pending["n"] -= 1
                                 if pending["n"] == 0:

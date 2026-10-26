@@ -1,5 +1,6 @@
 """Worker HTTP (FastAPI). Lê o CSV de DATA_PATH; só recebe intervalos de bytes."""
 import os
+import time
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -23,6 +24,7 @@ def health():
 @app.post("/process")
 def process(b: Block):
     path = os.environ.get("DATA_PATH", "data/sample.csv")
+    time.sleep(float(os.environ.get("DELAY_MS", 0)) / 1000)  # atraso artificial para testes de falha
     return {"block_id": b.block_id, "agregado": process_block(path, b.start, b.end)}
 
 
